@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>趣味数学闯关挑战</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- Tone.js for sound effects -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <!-- Canvas Confetti for celebration effect -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #f0fdf4;
+            background-image: radial-gradient(#bbf7d0 1px, transparent 1px);
+            background-size: 20px 20px;
+            scroll-behavior: smooth;
+        }
+        .fun-font {
+            font-family: 'ZCOOL KuaiLe', cursive;
+        }
+        
+        .option-btn {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            border-bottom-width: 4px;
+        }
+        .option-btn:active {
+            transform: translateY(4px);
+            border-bottom-width: 0px;
+            margin-bottom: 4px;
+        }
+        .option-selected {
+            background-color: #60a5fa !important;
+            border-color: #3b82f6 !important;
+            color: white !important;
+            transform: translateY(2px);
+            border-bottom-width: 2px;
+            margin-bottom: 2px;
+        }
+        .option-correct {
+            background-color: #34d399 !important;
+            border-color: #059669 !important;
+            color: white !important;
+        }
+        .option-wrong {
+            background-color: #f87171 !important;
+            border-color: #dc2626 !important;
+            color: white !important;
+        }
+
+        .btn-3d {
+            transition: all 0.15s ease;
+            box-shadow: 0 5px 0 var(--btn-shadow);
+        }
+        .btn-3d:active {
+            transform: translateY(5px);
+            box-shadow: 0 0px 0 var(--btn-shadow);
+        }
+
+        /* Modal animations */
+        .bounce-in {
+            animation: bounceIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes bounceIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Custom scrollbar for leaderboard */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="text-slate-800 pb-20 overflow-x-hidden">
+
+    <!-- Welcome Overlay (Form) -->
+    <div id="welcomeOverlay" class="fixed inset-0 bg-green-500/90 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-opacity duration-500">
+        <div class="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl transform transition-transform duration-500 scale-100" id="welcomeCard">
+            <div class="text-6xl mb-4">📝</div>
+            <h1 class="text-3xl font-bold fun-font text-green-600 mb-2">数学闯关挑战</h1>
+            <p class="text-slate-500 mb-6 font-semibold">请先填写你的资料哦！</p>
+            
+            <form id="studentForm" class="space-y-4 text-left">
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-1">姓名 <span class="text-red-500">*</span></label>
+                    <input type="text" id="studentName" required placeholder="例如: 小明" class="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-green-500 focus:ring-0 outline-none transition-colors font-bold text-slate-700">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-1">班级 <span class="text-red-500">*</span></label>
+                    <input type="text" id="studentClass" required placeholder="例如: 6A" class="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-green-500 focus:ring-0 outline-none transition-colors font-bold text-slate-700">
+                </div>
+                <button type="submit" style="--btn-shadow: #16a34a;" class="btn-3d w-full py-4 mt-4 bg-green-500 text-white font-bold rounded-xl text-lg hover:bg-green-600 flex items-center justify-center gap-2">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    🚀 开始挑战！
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main App Header -->
+    <header class="bg-white shadow-sm sticky top-0 z-40 border-b-4 border-green-400">
+        <div class="max-w-3xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-xl">🎓</div>
+                <div>
+                    <h1 class="text-xl font-bold fun-font text-slate-800 leading-tight">数学终年评估</h1>
+                    <p id="studentDisplayInfo" class="text-xs text-green-600 font-bold hidden">同学, 加油！</p>
+                </div>
+            </div>
+            <div class="text-right">
+                <div class="text-sm font-bold text-slate-500">已答题</div>
+                <div class="text-lg font-black text-green-500"><span id="answeredCount">0</span> / 12</div>
+            </div>
+        </div>
+        <!-- Progress Bar -->
+        <div class="h-1.5 w-full bg-slate-100">
+            <div id="progressBar" class="h-full bg-green-500 transition-all duration-300 w-0"></div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-3xl mx-auto px-4 pt-8 pb-24" id="quizContainer">
+        <!-- Questions will be injected here by JS -->
+    </main>
+
+    <!-- Submit Area -->
+    <div id="submitArea" class="max-w-3xl mx-auto px-4 mt-8 mb-12 hidden">
+        <button id="submitBtn" style="--btn-shadow: #2563eb;" class="btn-3d w-full py-4 bg-blue-500 text-white font-black rounded-2xl text-xl hover:bg-blue-600 flex items-center justify-center gap-2">
+            交卷并查看成绩 📝
+        </button>
+    </div>
+
+    <!-- Retry Area (Shown after grading) -->
+    <div id="retryArea" class="max-w-3xl mx-auto px-4 mt-8 mb-12 hidden">
+        <button id="retryBtn" style="--btn-shadow: #059669;" class="btn-3d w-full py-4 bg-emerald-500 text-white font-black rounded-2xl text-xl hover:bg-emerald-600 flex items-center justify-center gap-2">
+            🔄 重新练习
+        </button>
+    </div>
+
+    <!-- Results Modal (Hidden by default) -->
+    <div id="resultModal" class="fixed inset-0 bg-slate-900/60 z-50 hidden flex-col items-center justify-center p-4 backdrop-blur-sm opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-3xl p-6 md:p-8 max-w-md w-full text-center shadow-2xl relative bounce-in max-h-[95vh] flex flex-col">
+            <div class="overflow-y-auto flex-1 pr-2 pb-2" style="scrollbar-width: thin;">
+                <div id="resultEmoji" class="text-6xl md:text-7xl mb-2 drop-shadow-md">🎉</div>
+                <h2 id="resultTitle" class="text-3xl font-bold text-slate-800 fun-font mb-2">太棒了！</h2>
+                <p class="text-slate-600 text-lg mb-4">你的最终得分是</p>
+                
+                <div class="flex justify-center items-end gap-2 mb-6">
+                    <span id="finalScore" class="text-6xl font-black text-blue-600 leading-none"></span>
+                    <span class="text-2xl text-slate-400 font-bold mb-1">/ 12</span>
+                </div>
+
+                <!-- Leaderboard Section -->
+                <div class="mb-6 bg-slate-50 rounded-2xl border border-slate-200 p-4 w-full">
+                    <h3 class="text-lg font-bold text-slate-700 mb-3 flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5 text-amber-500" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                        排行榜 (Top Scores)
+                    </h3>
+                    <div id="leaderboardList" class="space-y-2 text-sm text-left max-h-40 overflow-y-auto pr-1" style="scrollbar-width: thin;">
+                        <!-- Leaderboard items injected here -->
+                    </div>
+                    <button id="clearLeaderboardBtn" class="mt-4 text-xs text-slate-400 hover:text-red-500 transition-colors">清除排行榜数据</button>
+                </div>
+
+                <button id="closeModalBtn" style="--btn-shadow: #2563eb;" class="btn-3d w-full py-3 bg-blue-500 text-white font-bold rounded-xl text-lg hover:bg-blue-600 mt-2">
+                    查看题目解析 👀
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Student Data State ---
+        let studentData = {
+            name: '',
+            className: ''
+        };
+
+        // --- Sound Setup (Tone.js) ---
+        let synth, successChime, errorBuzzer, winFanfare;
+        
+        async function initAudio() {
+            await Tone.start();
+            synth = new Tone.PolySynth(Tone.Synth).toDestination();
+            synth.volume.value = -10;
+            
+            // Short pop for clicking
+            successChime = new Tone.Synth({
+                oscillator: { type: 'sine' },
+                envelope: { attack: 0.01, decay: 0.1, sustain: 0.1, release: 1 }
+            }).toDestination();
+            
+            // Error sound
+            errorBuzzer = new Tone.Synth({
+                oscillator: { type: 'sawtooth' },
+                envelope: { attack: 0.05, decay: 0.2, sustain: 0, release: 0.5 }
+            }).toDestination();
+            
+            // Win fanfare
+            winFanfare = new Tone.PolySynth(Tone.Synth).toDestination();
+        }
+
+        function playClickSound() {
+            if(synth) synth.triggerAttackRelease("C5", "32n");
+        }
+
+        function playSubmitSound(isPerfect) {
+            if(!Tone.context || Tone.context.state !== 'running') return;
+            if(isPerfect) {
+                const now = Tone.now();
+                winFanfare.triggerAttackRelease(["C4", "E4", "G4"], "8n", now);
+                winFanfare.triggerAttackRelease(["E4", "G4", "C5"], "8n", now + 0.2);
+                winFanfare.triggerAttackRelease(["G4", "C5", "E5"], "4n", now + 0.4);
+            } else {
+                successChime.triggerAttackRelease("G4", "8n");
+            }
+        }
+
+        // --- Confetti Effect ---
+        function fireConfetti() {
+            var duration = 3 * 1000;
+            var animationEnd = Date.now() + duration;
+            var defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 100 };
+
+            function randomInRange(min, max) { return Math.random() * (max - min) + min; }
+
+            var interval = setInterval(function() {
+                var timeLeft = animationEnd - Date.now();
+                if (timeLeft <= 0) return clearInterval(interval);
+                var particleCount = 50 * (timeLeft / duration);
+                confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }));
+                confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
+            }, 250);
+        }
+
+        // --- STREAMING_CHUNK:Defining Quiz Data... ---
+        // Quiz Data
+        const questions = [
+            {
+                id: 1,
+                q: "1.) 将八百二十五万六千七百四十写成数字。",
+                options: ["825 6740", "8 256 740", "8 025 674"],
+                ans: 1,
+                explanation: "八百二十五万(8,250,000) + 六千七百四十(6,740) = 8,256,740。注意国际格式三位一个空格更标准，即 8 256 740。"
+            },
+            {
+                id: 2,
+                q: "2.) <span class='inline-block align-middle ml-2 text-center'><span class='block border-b-2 border-slate-700 px-1'>5</span><span class='block px-1'>7</span></span> <span class='mx-2 font-bold'>÷</span> <span class='inline-block align-middle text-center'><span class='block border-b-2 border-slate-700 px-1'>5</span><span class='block px-1'>6</span></span> =",
+                options: ["<span class='inline-block align-middle text-center'><span class='block border-b-2 border-slate-700 px-1'>6</span><span class='block px-1'>7</span></span>", "<span class='inline-block align-middle text-center'><span class='block border-b-2 border-slate-700 px-1'>25</span><span class='block px-1'>42</span></span>", "<span class='inline-block align-middle text-center'><span class='block border-b-2 border-slate-700 px-1'>7</span><span class='block px-1'>6</span></span>"],
+                ans: 0,
+                explanation: "分数除法规则：除以一个分数等于乘以它的倒数。 即 5/7 × 6/5。5 和 5 互相抵消，剩下 6/7。"
+            },
+            {
+                id: 3,
+                q: `3.) 下图显示一个圆。<br>写出 OA 线的名称。`,
+                imageHtml: `
+                    <div class="flex justify-center my-4">
+                        <svg width="200" height="200" viewBox="0 0 200 200" class="drop-shadow-sm">
+                            <circle cx="100" cy="100" r="90" fill="none" stroke="#334155" stroke-width="4"/>
+                            <circle cx="100" cy="100" r="4" fill="#000"/>
+                            <line x1="100" y1="100" x2="190" y2="100" stroke="#000" stroke-width="4"/>
+                            <text x="95" y="90" font-family="sans-serif" font-size="16" font-weight="bold">O</text>
+                            <text x="175" y="90" font-family="sans-serif" font-size="16" font-weight="bold">A</text>
+                        </svg>
+                    </div>
+                `,
+                options: ["半径", "直径", "圆心"],
+                ans: 0,
+                explanation: "从圆心(O)到圆周上任意一点(A)的连线叫做半径。"
+            },
+            {
+                id: 4,
+                q: "4.) 5.16 x 4.9 =",
+                options: ["25.284", "24.184", "26.384"],
+                ans: 0,
+                explanation: "可以先忽略小数点计算 516 x 49 = 25284。原式有三位小数，所以结果是 25.284。"
+            },
+            {
+                id: 5,
+                q: "5.) 9.61 x 5.4 =",
+                options: ["50.894", "51.894", "52.894"],
+                ans: 1,
+                explanation: "961 x 54 = 51894。原式有三位小数，加上小数点即 51.894。"
+            },
+            {
+                id: 6,
+                q: "6.) 750 x 125% =",
+                options: ["925.5", "937.5", "945.0"],
+                ans: 1,
+                explanation: "125% = 1.25。 750 x 1.25 = 937.5。或者 750 + (750 x 25%) = 750 + 187.5 = 937.5。"
+            },
+            {
+                id: 7,
+                q: "7.) 一个农场的鸡与鸭的数量的比是 5 : 1。鸡有250只。计算鸭的数量。",
+                options: ["40只", "50只", "60只"],
+                ans: 1,
+                explanation: "鸡的比重是5份，代表250只。所以1份 = 250 ÷ 5 = 50只。鸭的比重是1份，所以有50只鸭。"
+            },
+            {
+                id: 8,
+                q: `8.) 以下是你按照食谱烘制蛋糕所需的面粉和蛋液。<br>
+                    • 400 g 面粉<br>
+                    • 280 mℓ 蛋液<br>
+                    你的姐姐要烘制蛋糕，用了 550 g 面粉。她用了多少 mℓ 蛋液？`,
+                options: ["365 mℓ", "375 mℓ", "385 mℓ"],
+                ans: 2,
+                explanation: "先计算1g面粉需要多少蛋液：280 ÷ 400 = 0.7 mℓ。 那么 550g 面粉需要：550 x 0.7 = 385 mℓ 蛋液。"
+            },
+            {
+                id: 9,
+                q: `9.) 笛卡尔平面图显示公园和加油站的位置。<br>写出公园到加油站的实际距离。(比例尺：1 cm 代表 1 km)`,
+                imageHtml: `
+                    <div class="flex flex-col items-center my-4 overflow-x-auto w-full pb-4">
+                        <div class="relative w-[550px] bg-white p-4 border border-slate-200 rounded-xl">
+                            <svg viewBox="0 0 550 350" class="w-full h-auto">
+                                <!-- Grid Background (Fixed Cross Sections) -->
+                                <g stroke="#e2e8f0" stroke-width="1.5">
+                                    <!-- Vertical lines -->
+                                    ${Array.from({length: 12}).map((_, i) => `<line x1="${50 + i*40}" y1="50" x2="${50 + i*40}" y2="290" />`).join('')}
+                                    <!-- Horizontal lines -->
+                                    ${Array.from({length: 7}).map((_, i) => `<line x1="50" y1="${50 + i*40}" x2="490" y2="${50 + i*40}" />`).join('')}
+                                </g>
+                                
+                                <!-- Axes Labels -->
+                                <text x="35" y="305" font-family="sans-serif" font-size="16" font-style="italic">O</text>
+                                
+                                <!-- X Axis Labels -->
+                                ${Array.from({length: 10}).map((_, i) => `<text x="${90 + i*40}" y="315" font-family="sans-serif" font-size="14" text-anchor="middle">${i+1}</text>`).join('')}
+                                <text x="510" y="305" font-family="sans-serif" font-size="16" font-weight="bold">x</text>
+                                
+                                <!-- Y Axis Labels -->
+                                ${Array.from({length: 6}).map((_, i) => `<text x="30" y="${255 - i*40}" font-family="sans-serif" font-size="14" text-anchor="middle">${i+1}</text>`).join('')}
+                                <text x="50" y="30" font-family="sans-serif" font-size="16" font-weight="bold">y</text>
+                                
+                                <!-- North Arrow -->
+                                <g transform="translate(10, 50)">
+                                    <line x1="20" y1="0" x2="20" y2="40" stroke="#000" stroke-width="2"/>
+                                    <polygon points="20,-5 15,10 25,10" fill="#000"/>
+                                    <text x="20" y="-15" font-family="sans-serif" font-size="14" text-anchor="middle">北</text>
+                                </g>
+
+                                <!-- Points precisely on intersections -->
+                                <!-- 公园 Park: (3, 2) -> X: 50 + 3*40 = 170, Y: 290 - 2*40 = 210 -->
+                                <circle cx="170" cy="210" r="4" fill="#000"/>
+                                <text x="170" y="200" font-family="sans-serif" font-size="14" text-anchor="end">公园</text>
+                                
+                                <!-- 加油站 Gas Station: (9, 4) -> X: 50 + 9*40 = 410, Y: 290 - 4*40 = 130 -->
+                                <circle cx="410" cy="130" r="4" fill="#000"/>
+                                <text x="410" y="120" font-family="sans-serif" font-size="14" text-anchor="middle">加油站</text>
+                            </svg>
+                        </div>
+                    </div>
+                `,
+                options: [
+                    "横向: 6 km, 直向: 2 km",
+                    "横向: 5 km, 直向: 3 km",
+                    "横向: 7 km, 直向: 2 km"
+                ],
+                ans: 0,
+                explanation: "公园坐标(3, 2)，加油站坐标(9, 4)。横向距离 = 9 - 3 = 6 个单位；直向距离 = 4 - 2 = 2 个单位。比例尺1个单位代表1km，所以横向6km，直向2km。"
+            },
+            {
+                id: 10,
+                q: "10.) 明峰在夜市共花费了 RM175，其中 25% 用于购买物品。计算明峰剩余的钱。",
+                options: ["RM 43.75", "RM 131.25", "RM 150.00"],
+                ans: 1,
+                explanation: "花费了25%，剩下的是 100% - 25% = 75%。 RM 175 x 75% = RM 131.25。"
+            },
+            {
+                id: 11,
+                q: `11.) 以下是两座城市的当地时间。<br>
+                    <div class="flex justify-center gap-4 my-4">
+                        <div class="border-2 border-slate-700 p-3 text-center bg-white"><div class="font-bold border-b border-slate-300 pb-1 mb-1">P 城市</div>星期日 6:30 a.m.</div>
+                        <div class="border-2 border-slate-700 p-3 text-center bg-white"><div class="font-bold border-b border-slate-300 pb-1 mb-1">Q 城市</div>星期日 10:30 a.m.</div>
+                    </div>
+                    计算两座城市的时差。`,
+                options: ["3小时", "4小时", "5小时"],
+                ans: 1,
+                explanation: "从早上 6:30 到早上 10:30，相差了整整 4 个小时。"
+            },
+            {
+                id: 12,
+                q: `12.) 下图显示马来西亚吉隆坡的时间：<br>
+                    <div class="text-center my-4"><span class="border-2 border-green-600 bg-green-50 px-4 py-2 font-bold text-lg text-green-800">1845 时</span></div>
+                    英国伦敦位于 +0 时区，而马来西亚吉隆坡所在的时区是 +8。<br>根据上述时间, 计算你在英国伦敦的时间。`,
+                options: ["1045 时", "0245 时", "2645 时"],
+                ans: 0,
+                explanation: "吉隆坡比伦敦快8个小时（+8对+0）。所以要求伦敦时间，需减去8小时。1845 - 0800 = 1045 时。"
+            }
+        ];
+
+        // --- STREAMING_CHUNK:State Management and Render Functions... ---
+        let answers = new Array(questions.length).fill(null);
+        let isSubmitted = false;
+
+        function renderQuestions() {
+            const container = document.getElementById('quizContainer');
+            container.innerHTML = '';
+            
+            questions.forEach((q, index) => {
+                const qDiv = document.createElement('div');
+                qDiv.className = 'bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6 transition-all duration-300 hover:shadow-md';
+                qDiv.id = `q-card-${index}`;
+                
+                let html = `<h3 class="text-lg font-bold text-slate-800 mb-4 leading-relaxed">${q.q}</h3>`;
+                if(q.imageHtml) html += q.imageHtml;
+                
+                html += `<div class="grid grid-cols-1 md:grid-cols-3 gap-3">`;
+                
+                q.options.forEach((opt, optIndex) => {
+                    html += `
+                        <button onclick="selectOption(${index}, ${optIndex})" id="btn-${index}-${optIndex}"
+                                class="option-btn py-3 px-4 rounded-xl border-2 border-slate-200 bg-slate-50 text-slate-700 font-bold hover:bg-slate-100 focus:outline-none flex items-center justify-center">
+                            <span class="mr-2 inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-200 text-xs text-slate-600 font-black">${['A','B','C'][optIndex]}</span>
+                            <span>${opt}</span>
+                        </button>
+                    `;
+                });
+                
+                html += `</div>`;
+                
+                // Explanation div (hidden initially)
+                html += `
+                    <div id="exp-${index}" class="mt-4 p-4 rounded-xl bg-slate-100 border border-slate-200 hidden">
+                        <div class="font-bold flex items-center gap-2 mb-1">
+                            <span id="icon-${index}"></span>
+                            <span class="text-slate-700">解析</span>
+                        </div>
+                        <p class="text-slate-600 text-sm leading-relaxed">${q.explanation}</p>
+                    </div>
+                `;
+                
+                qDiv.innerHTML = html;
+                container.appendChild(qDiv);
+            });
+        }
+
+        function selectOption(qIndex, optIndex) {
+            if(isSubmitted) return;
+            initAudio(); 
+            playClickSound();
+
+            answers[qIndex] = optIndex;
+            
+            // Reset styles for this question
+            for(let i=0; i<3; i++) {
+                const btn = document.getElementById(`btn-${qIndex}-${i}`);
+                btn.classList.remove('option-selected', 'bg-slate-50', 'text-slate-700', 'border-slate-200');
+                if(i === optIndex) {
+                    btn.classList.add('option-selected');
+                } else {
+                    btn.classList.add('bg-slate-50', 'text-slate-700', 'border-slate-200');
+                }
+            }
+            updateProgress();
+        }
+
+        function updateProgress() {
+            const answered = answers.filter(a => a !== null).length;
+            const total = questions.length;
+            
+            document.getElementById('answeredCount').textContent = answered;
+            document.getElementById('progressBar').style.width = `${(answered / total) * 100}%`;
+            
+            if(answered === total) {
+                document.getElementById('submitArea').classList.remove('hidden');
+                document.getElementById('submitArea').scrollIntoView({ behavior: 'smooth', block: 'end' });
+            }
+        }
+
+        // --- STREAMING_CHUNK:Submission and Leaderboard Logic... ---
+        document.getElementById('studentForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const nameInput = document.getElementById('studentName').value.trim();
+            const classInput = document.getElementById('studentClass').value.trim();
+            
+            if (nameInput && classInput) {
+                studentData.name = nameInput;
+                studentData.className = classInput;
+                
+                document.getElementById('welcomeOverlay').classList.add('opacity-0', 'pointer-events-none');
+                document.getElementById('welcomeCard').classList.remove('scale-100');
+                document.getElementById('welcomeCard').classList.add('scale-95');
+                
+                const infoDisplay = document.getElementById('studentDisplayInfo');
+                infoDisplay.textContent = `${studentData.className}班 - ${studentData.name} 同学, 加油！`;
+                infoDisplay.classList.remove('hidden');
+                
+                initAudio(); // Prepare audio context on user gesture
+                
+                setTimeout(() => {
+                    document.getElementById('welcomeOverlay').style.display = 'none';
+                }, 500);
+            }
+        });
+
+        document.getElementById('submitBtn').addEventListener('click', () => {
+            if(answers.includes(null)) return; // Double check
+            isSubmitted = true;
+            document.getElementById('submitArea').classList.add('hidden');
+            
+            let score = 0;
+            
+            questions.forEach((q, index) => {
+                const selected = answers[index];
+                const isCorrect = selected === q.ans;
+                if(isCorrect) score++;
+                
+                // Show explanations
+                const expDiv = document.getElementById(`exp-${index}`);
+                const iconSpan = document.getElementById(`icon-${index}`);
+                expDiv.classList.remove('hidden');
+                
+                // Style buttons
+                for(let i=0; i<3; i++) {
+                    const btn = document.getElementById(`btn-${index}-${i}`);
+                    btn.disabled = true;
+                    btn.classList.remove('option-selected', 'hover:bg-slate-100');
+                    
+                    if(i === q.ans) {
+                        btn.classList.add('option-correct');
+                        btn.classList.remove('bg-slate-50', 'text-slate-700', 'border-slate-200');
+                    } else if (i === selected && !isCorrect) {
+                        btn.classList.add('option-wrong');
+                        btn.classList.remove('bg-slate-50', 'text-slate-700', 'border-slate-200');
+                    }
+                }
+                
+                if(isCorrect) {
+                    expDiv.classList.add('bg-green-50', 'border-green-200');
+                    iconSpan.innerHTML = '✅';
+                } else {
+                    expDiv.classList.add('bg-red-50', 'border-red-200');
+                    iconSpan.innerHTML = '❌';
+                }
+            });
+
+            showResultModal(score, questions.length);
+        });
+
+        function showResultModal(score, total) {
+            document.getElementById('finalScore').textContent = score;
+            const title = document.getElementById('resultTitle');
+            const emoji = document.getElementById('resultEmoji');
+            
+            // Handle Leaderboard
+            const updatedLeaderboard = saveScoreToLeaderboard(studentData.name, studentData.className, score);
+            renderLeaderboard(updatedLeaderboard, score);
+
+            let passed = score > total / 2;
+            let perfect = score === total;
+
+            if(perfect) {
+                title.textContent = "完美！满分学霸！";
+                title.className = "text-3xl font-bold text-amber-500 fun-font mb-2";
+                emoji.textContent = "🏆";
+                fireConfetti();
+                playSubmitSound(true);
+            } else if (passed) {
+                title.textContent = "太棒了！继续保持！";
+                title.className = "text-3xl font-bold text-blue-500 fun-font mb-2";
+                emoji.textContent = "🌟";
+                fireConfetti();
+                playSubmitSound(false);
+            } else {
+                title.textContent = "再接再厉，你可以的！";
+                title.className = "text-3xl font-bold text-slate-600 fun-font mb-2";
+                emoji.textContent = "💪";
+                playSubmitSound(false);
+            }
+
+            const resultModal = document.getElementById('resultModal');
+            resultModal.classList.remove('hidden');
+            setTimeout(() => {
+                resultModal.classList.remove('opacity-0');
+            }, 10);
+        }
+
+        // --- Leaderboard Implementation ---
+        function saveScoreToLeaderboard(name, className, score) {
+            let leaderboard = JSON.parse(localStorage.getItem('mathQuizLeaderboard')) || [];
+            leaderboard.push({ name, className, score, time: Date.now() });
+            // Sort by score (descending) then time (descending - newest first)
+            leaderboard.sort((a, b) => b.score - a.score || b.time - a.time);
+            // Keep top 10
+            leaderboard = leaderboard.slice(0, 10);
+            localStorage.setItem('mathQuizLeaderboard', JSON.stringify(leaderboard));
+            return leaderboard;
+        }
+
+        function renderLeaderboard(leaderboard, currentScore) {
+            const list = document.getElementById('leaderboardList');
+            list.innerHTML = '';
+            if(leaderboard.length === 0) {
+                list.innerHTML = '<div class="text-center text-slate-400 py-4">暂无排名，快来抢占第一！</div>';
+                return;
+            }
+            leaderboard.forEach((entry, index) => {
+                let badge = '';
+                if(index === 0) badge = '🥇';
+                else if(index === 1) badge = '🥈';
+                else if(index === 2) badge = '🥉';
+                else badge = `<span class="inline-block w-5 text-center text-slate-400 font-bold">${index + 1}</span>`;
+                
+                // Highlight the current user's newly submitted score
+                const isCurrent = entry.name === studentData.name && entry.score === currentScore && (Date.now() - entry.time < 5000);
+                
+                list.innerHTML += `
+                    <div class="flex items-center justify-between p-2 rounded-lg ${isCurrent ? 'bg-blue-100 border border-blue-200 shadow-sm' : 'bg-white border border-slate-100'}">
+                        <div class="flex items-center gap-2 overflow-hidden">
+                            ${badge}
+                            <span class="font-bold text-slate-700 truncate max-w-[120px]" title="${entry.name}">${entry.name}</span>
+                            <span class="text-xs text-slate-400 truncate max-w-[80px]" title="${entry.className}">(${entry.className})</span>
+                        </div>
+                        <div class="font-bold ${isCurrent ? 'text-blue-700' : 'text-blue-500'} whitespace-nowrap ml-2">${entry.score} 分</div>
+                    </div>
+                `;
+            });
+        }
+
+        document.getElementById('clearLeaderboardBtn').addEventListener('click', (e) => {
+            localStorage.removeItem('mathQuizLeaderboard');
+            renderLeaderboard([], 0);
+            e.target.textContent = '已清除！';
+            setTimeout(() => e.target.textContent = '清除排行榜数据', 2000);
+        });
+
+        // --- STREAMING_CHUNK:Closing Modals and Resetting... ---
+        document.getElementById('closeModalBtn').addEventListener('click', () => {
+            const resultModal = document.getElementById('resultModal');
+            resultModal.classList.add('opacity-0');
+            setTimeout(() => {
+                resultModal.classList.add('hidden');
+                document.getElementById('retryArea').classList.remove('hidden');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }, 300);
+        });
+
+        document.getElementById('retryBtn').addEventListener('click', () => {
+            answers = new Array(questions.length).fill(null);
+            isSubmitted = false;
+            document.getElementById('retryArea').classList.add('hidden');
+            renderQuestions();
+            updateProgress();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
+        // Initialize quiz on load
+        renderQuestions();
+
+    </script>
+</body>
+</html>
